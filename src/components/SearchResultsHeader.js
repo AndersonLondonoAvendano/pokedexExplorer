@@ -47,13 +47,14 @@ const styles = StyleSheet.create({
   },
   status: {
     ...TYPOGRAPHY.body,
-    color: COLORS.ink,
+    color: COLORS.inkMuted,
     flexShrink: 1,
     paddingVertical: SPACING.sm,
   },
   action: {
     minHeight: SIZES.touch,
     minWidth: SIZES.touch,
+    paddingHorizontal: SPACING.md,
     justifyContent: 'center',
     alignItems: 'center',
   },

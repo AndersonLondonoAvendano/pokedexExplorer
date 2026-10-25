@@ -62,8 +62,15 @@ export default function PokemonListView({ onSelectPokemon }) {
     [results, clearResults],
   );
 
-  // While the search strip shows its error it owns the only retry button.
+  // While the search strip shows its error it owns the only retry button (the list footer drops its own).
   const searchFailed = searchStatus === 'error';
+  const firstPageFailed = status === 'error';
+
+  // When both fail, the big block owns the only retry button, so it repeats both requests.
+  const retryFirstPage = useCallback(() => {
+    retry();
+    if (searchFailed) retrySearch();
+  }, [retry, retrySearch, searchFailed]);
 
   // [CONCEPT] useWindowDimensions: the width is read from the screen so the two tiles fill the row
   // on any phone, and it updates by itself when the window changes size.
@@ -138,10 +145,7 @@ export default function PokemonListView({ onSelectPokemon }) {
       content = (
         <>
           <View style={styles.stateHeader}>{header}</View>
-          <ErrorState
-            message={STRINGS.errorGeneric}
-            onRetry={searchFailed ? undefined : retry}
-          />
+          <ErrorState message={STRINGS.errorGeneric} onRetry={retryFirstPage} />
         </>
       );
       break;
@@ -186,8 +190,10 @@ export default function PokemonListView({ onSelectPokemon }) {
       );
       break;
     case 'error':
-      // The strip always draws; the first-page error and the list footer drop their own retry.
-      strip = <ErrorState compact message={STRINGS.errorGeneric} onRetry={retrySearch} />;
+      // The message is not drawn twice: the strip stays out while the first-page error block shows it.
+      strip = firstPageFailed ? null : (
+        <ErrorState compact message={STRINGS.errorGeneric} onRetry={retrySearch} />
+      );
       break;
     default:
       strip = null;
