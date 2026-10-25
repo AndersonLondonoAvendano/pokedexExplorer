@@ -2,7 +2,7 @@
 // models built by the private mappers below, so the raw JSON never leaves
 // this file and the rest of the app does not depend on the API's shape.
 
-import { API_BASE_URL, PAGE_SIZE, buildArtworkUrl } from '../config/api.js';
+import { API_BASE_URL, INDEX_LIMIT, PAGE_SIZE, buildArtworkUrl } from '../config/api.js';
 import {
   decimetersToMeters,
   extractIdFromUrl,
@@ -80,4 +80,11 @@ export async function fetchPokemonDetail(idOrName, signal) {
   const segment = isNumericQuery(term) ? term : encodeURIComponent(term);
   const data = await request(`${API_BASE_URL}/pokemon/${segment}`, signal);
   return mapPokemonDetail(data);
+}
+
+// Every Pokémon name with its id and image, in one request. The id comes from each
+// resource URL, never from the position, so the order the API returns does not matter.
+export async function fetchPokemonIndex({ signal } = {}) {
+  const data = await request(`${API_BASE_URL}/pokemon?limit=${INDEX_LIMIT}&offset=0`, signal);
+  return data.results.map(mapListItem);
 }

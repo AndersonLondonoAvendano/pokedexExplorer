@@ -3,6 +3,7 @@ import { STRINGS } from '../config/strings.js';
 import { COLORS, SIZES, SPACING, TYPOGRAPHY } from '../theme/index.js';
 
 // Error block: a plain Spanish sentence that says what happened and what to do, plus a retry action.
+// Without onRetry only the message is drawn (no button), so a screen never shows two retry buttons.
 // The message always comes from the strings file, so no technical detail ever reaches the user.
 export default function ErrorState({ message, onRetry, compact = false }) {
   return (
@@ -19,12 +20,14 @@ export default function ErrorState({ message, onRetry, compact = false }) {
       </Text>
       {/* [CONCEPT] Button: the core Button is enough for a simple text action; it keeps the
           platform's own size and look, and its title doubles as the accessible label. */}
-      <Button
-        title={STRINGS.retryButton}
-        onPress={onRetry}
-        color={COLORS.accent}
-        testID="retry-button"
-      />
+      {onRetry ? (
+        <Button
+          title={STRINGS.retryButton}
+          onPress={onRetry}
+          color={COLORS.accent}
+          testID="retry-button"
+        />
+      ) : null}
     </View>
   );
 }

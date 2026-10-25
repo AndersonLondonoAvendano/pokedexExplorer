@@ -14,3 +14,9 @@ const ARTWORK_BASE_URL =
 export function buildArtworkUrl(id) {
   return `${ARTWORK_BASE_URL}/${id}.png`;
 }
+
+// Fixed, generous limit for the single request that fetches every Pokémon name (the catalogue is smaller).
+export const INDEX_LIMIT = 2000;
+
+// Maximum number of tiles in the search results list.
+export const MAX_RESULTS = 100;

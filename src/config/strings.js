@@ -27,6 +27,13 @@ export const STRINGS = {
   errorGeneric: 'No pudimos conectar con la PokéAPI. Revisa tu conexión e inténtalo de nuevo.',
   searchNotFound: (query) => `No encontramos ningún Pokémon llamado “${query}”.`,
 
+  // Search results (the term is the text the user typed, trimmed and lowercase)
+  resultsStatus: (count, term) => `${formatNumber(count)} resultados para «${term}»`,
+  resultsStatusCapped: (shown, count, term) =>
+    `Mostrando los primeros ${formatNumber(shown)} de ${formatNumber(count)} resultados para «${term}»`,
+  viewAll: 'Ver todos',
+  viewAllLabel: 'Ver todos los Pokémon',
+
   // Accessibility labels
   cardLabel: (name, id) => `${name}, número ${id}`, // list tile
   typeLabel: (label) => `Tipo ${label}`, // type badge

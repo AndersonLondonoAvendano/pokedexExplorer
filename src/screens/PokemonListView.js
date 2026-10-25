@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { FlatList, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { FlatList, Keyboard, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { STRINGS } from '../config/strings.js';
 import EmptyState from '../components/EmptyState.js';
 import ErrorState from '../components/ErrorState.js';
@@ -8,9 +8,10 @@ import ListFooter from '../components/ListFooter.js';
 import LoadingState from '../components/LoadingState.js';
 import PokemonCard from '../components/PokemonCard.js';
 import SearchBar from '../components/SearchBar.js';
+import SearchResultsHeader from '../components/SearchResultsHeader.js';
 import { usePokemonList } from '../hooks/usePokemonList.js';
 import { usePokemonSearch } from '../hooks/usePokemonSearch.js';
-import { SPACING, pairFor } from '../theme/index.js';
+import { COLORS, SPACING, pairFor } from '../theme/index.js';
 
 // Paginated Pokédex list: the first-page state (under the title) or the two-column
 // grid, whose list header holds the title and scrolls with it.
@@ -26,8 +27,10 @@ export default function PokemonListView({ onSelectPokemon }) {
     status: searchStatus,
     retry: retrySearch,
     lastQuery,
+    results,
     search,
     reset: resetSearch,
+    clearResults,
   } = usePokemonSearch({ onFound: onSelectPokemon });
 
   // Pressing a piece always cancels any search first, then opens the detail.
@@ -38,6 +41,29 @@ export default function PokemonListView({ onSelectPokemon }) {
     },
     [resetSearch, onSelectPokemon],
   );
+
+  // A result opens its detail too, but the results stay open underneath, so going back to the
+  // list finds them as they were. The keyboard is closed first so the first touch is not lost.
+  const handleSelectResult = useCallback(
+    (id) => {
+      Keyboard.dismiss();
+      resetSearch();
+      onSelectPokemon(id);
+    },
+    [resetSearch, onSelectPokemon],
+  );
+
+  // An emptied field with results open goes back to the full list.
+  const handleChangeText = useCallback(
+    (value) => {
+      setText(value);
+      if (results && value.trim() === '') clearResults();
+    },
+    [results, clearResults],
+  );
+
+  // While the search strip shows its error it owns the only retry button.
+  const searchFailed = searchStatus === 'error';
 
   // [CONCEPT] useWindowDimensions: the width is read from the screen so the two tiles fill the row
   // on any phone, and it updates by itself when the window changes size.
@@ -61,6 +87,21 @@ export default function PokemonListView({ onSelectPokemon }) {
       />
     ),
     [tileSize, handleSelectPiece],
+  );
+
+  const renderResult = useCallback(
+    ({ item, index }) => (
+      <PokemonCard
+        id={item.id}
+        name={item.name}
+        imageUrl={item.imageUrl}
+        pair={pairFor(index)}
+        tileSize={tileSize}
+        onPress={handleSelectResult}
+        style={index % 2 === 1 ? styles.staggered : undefined}
+      />
+    ),
+    [tileSize, handleSelectResult],
   );
 
   // [CONCEPT] useRef: the ref holds the FlatList instance so its imperative scrollToEnd method
@@ -97,7 +138,10 @@ export default function PokemonListView({ onSelectPokemon }) {
       content = (
         <>
           <View style={styles.stateHeader}>{header}</View>
-          <ErrorState message={STRINGS.errorGeneric} onRetry={retry} />
+          <ErrorState
+            message={STRINGS.errorGeneric}
+            onRetry={searchFailed ? undefined : retry}
+          />
         </>
       );
       break;
@@ -118,7 +162,9 @@ export default function PokemonListView({ onSelectPokemon }) {
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListHeaderComponent={<View style={styles.listHeader}>{header}</View>}
-          ListFooterComponent={<ListFooter footerStatus={footerStatus} onRetry={retry} />}
+          ListFooterComponent={(
+            <ListFooter footerStatus={footerStatus} onRetry={searchFailed ? undefined : retry} />
+          )}
           keyboardShouldPersistTaps="handled"
           columnWrapperStyle={styles.row}
           ItemSeparatorComponent={RowSeparator}
@@ -140,10 +186,8 @@ export default function PokemonListView({ onSelectPokemon }) {
       );
       break;
     case 'error':
-      // The first-page error already shows the one retry button; avoid a duplicate.
-      if (status !== 'error') {
-        strip = <ErrorState compact message={STRINGS.errorGeneric} onRetry={retrySearch} />;
-      }
+      // The strip always draws; the first-page error and the list footer drop their own retry.
+      strip = <ErrorState compact message={STRINGS.errorGeneric} onRetry={retrySearch} />;
       break;
     default:
       strip = null;
@@ -152,10 +196,50 @@ export default function PokemonListView({ onSelectPokemon }) {
   return (
     <View style={styles.container}>
       <View style={styles.searchZone}>
-        <SearchBar value={text} onChangeText={setText} onSearch={search} />
+        <SearchBar value={text} onChangeText={handleChangeText} onSearch={search} />
         {strip ? <View style={styles.strip}>{strip}</View> : null}
+        {results ? (
+          <View style={styles.resultsHeader}>
+            <SearchResultsHeader
+              term={results.term}
+              total={results.total}
+              shown={results.items.length}
+              onViewAll={clearResults}
+            />
+          </View>
+        ) : null}
       </View>
-      {content}
+      <View style={styles.body}>
+        {/* The main list stays mounted under the results, so its scroll and pages are kept; while
+            the results are open it is out of reach of touches and screen readers. */}
+        <View
+          style={styles.fill}
+          pointerEvents={results ? 'none' : 'auto'}
+          importantForAccessibility={results ? 'no-hide-descendants' : 'auto'}
+          accessibilityElementsHidden={Boolean(results)}
+        >
+          {content}
+        </View>
+        {results ? (
+          <View style={styles.resultsLayer}>
+            {/* The second grid has no onEndReached: the matches are already all in memory.
+                The key restarts its scroll when a new set of results replaces the old one. */}
+            <FlatList
+              key={results.version}
+              testID="search-results-list"
+              data={results.items}
+              numColumns={2}
+              keyExtractor={keyExtractor}
+              renderItem={renderResult}
+              ListFooterComponent={<View style={styles.resultsFooter} />}
+              keyboardShouldPersistTaps="handled"
+              columnWrapperStyle={styles.row}
+              ItemSeparatorComponent={RowSeparator}
+              contentContainerStyle={styles.content}
+            />
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -176,6 +260,24 @@ const styles = StyleSheet.create({
   strip: {
     marginTop: SPACING.sm,
   },
+  resultsHeader: {
+    marginTop: SPACING.sm,
+  },
+  // Holds the main list and the results layer, below the fixed search zone.
+  body: {
+    flex: 1,
+  },
+  fill: {
+    flex: 1,
+  },
+  resultsLayer: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: COLORS.ground,
+  },
+  // Same clearance under the last row as the main list footer (the right column is pushed down).
+  resultsFooter: {
+    marginTop: SPACING.stagger + SPACING.md,
+  },
   // Inside the list the side margin comes from the content container; the bottom padding is
   // the space between the subtitle and the grid.
   listHeader: {
@@ -192,6 +294,8 @@ const styles = StyleSheet.create({
   },
   row: {
     gap: SPACING.md,
+    // Each tile keeps its own height, so a two-line name does not stretch its neighbour.
+    alignItems: 'flex-start',
   },
   separator: {
     height: SPACING.md,

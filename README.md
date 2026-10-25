@@ -33,7 +33,7 @@ No hace falta ninguna clave: la PokéAPI es pública. La app necesita conexión 
 
 - **Lista paginada de 20 en 20** en una cuadrícula de dos columnas, con **scroll infinito**: al acercarse al final se pide la siguiente página, sin repetir peticiones ni duplicar Pokémon.
 - **Ficha de cada Pokémon**: imagen oficial, número de catálogo (`#025`), tipos, altura, peso y las seis estadísticas base con su barra.
-- **Búsqueda por nombre o por número**: acepta el nombre en inglés (como lo entrega la PokéAPI) o el número; los espacios y las mayúsculas se normalizan (`Pikachu`, `  025 `). Se lanza con el botón o con la tecla de enviar del teclado y abre la ficha si existe.
+- **Búsqueda por nombre o por número**: con 2 o más letras (en inglés, como las entrega la PokéAPI) se buscan coincidencias parciales por nombre. Si hay varias, se muestra una lista de hasta 100 resultados con "Ver todos" para volver a la lista completa; si hay una sola coincidencia o el nombre exacto, se abre su ficha. El número y las búsquedas de una sola letra son exactas. Las mayúsculas y los espacios se normalizan (`Pikachu`, `  025 `) y los espacios interiores pasan a guion (`mr mime`). El índice de nombres se pide una sola vez, la primera vez que se busca texto, y se guarda en memoria durante la sesión. Un término sin resultados muestra el mensaje con el término. Se lanza con el botón o con la tecla de enviar del teclado.
 - **Estados de carga, error y sin resultados** en todas las pantallas: cada petición muestra un texto en español, nunca un código técnico, y los errores ofrecen un botón para reintentar. Si falla una página intermedia de la lista, los Pokémon ya cargados se conservan.
 - **Botón Atrás de Android**: desde la ficha vuelve a la lista (no cierra la app) y la lista conserva su posición.
 - **Accesibilidad**: etiquetas y roles en lo interactivo, texto que crece con el tamaño de fuente del sistema y respeto del ajuste "Reducir movimiento".
@@ -57,8 +57,8 @@ Capturas en el navegador a 360×780, con datos de la PokéAPI simulados.
 | Ficha de Charizard | Cargando la lista |
 | ![Error con Reintentar](screenshots/05-error.png) | ![Búsqueda sin resultados](screenshots/06-sin-resultados.png) |
 | Error con Reintentar | Búsqueda sin resultados |
-| ![Ficha tras buscar Pikachu](screenshots/07-busqueda.png) | |
-| Ficha tras buscar "Pikachu" | |
+| ![Ficha tras buscar Pikachu](screenshots/07-busqueda.png) | ![Resultados de buscar char](screenshots/08-resultados-busqueda.png) |
+| Ficha tras buscar "Pikachu" | Resultados de buscar «char» |
 
 ## Árbol de carpetas
 
@@ -86,7 +86,8 @@ Capturas en el navegador a 360×780, con datos de la PokéAPI simulados.
 │   ├── 04-cargando.png
 │   ├── 05-error.png
 │   ├── 06-sin-resultados.png
-│   └── 07-busqueda.png
+│   ├── 07-busqueda.png
+│   └── 08-resultados-busqueda.png
 └── src/
     ├── components/
     │   ├── EmptyState.js
@@ -96,6 +97,7 @@ Capturas en el navegador a 360×780, con datos de la PokéAPI simulados.
     │   ├── LoadingState.js
     │   ├── PokemonCard.js
     │   ├── SearchBar.js
+    │   ├── SearchResultsHeader.js
     │   ├── StatBar.js
     │   └── TypeBadge.js
     ├── config/
@@ -123,7 +125,8 @@ Capturas en el navegador a 360×780, con datos de la PokéAPI simulados.
     │   └── typography.js
     └── utils/
         ├── formatters.js
-        └── nameFit.js
+        ├── nameFit.js
+        └── searchMatch.js
 ```
 
 ## Responsabilidad de cada archivo
@@ -136,14 +139,14 @@ Capturas en el navegador a 360×780, con datos de la PokéAPI simulados.
 | `App.js` | Raíz de la app: provee las áreas seguras (`SafeAreaProvider`, `SafeAreaView`), pinta el fondo piedra y la barra de estado, y muestra `HomeScreen`. No tiene lógica. |
 | `app.json` | Configuración de Expo: nombre de la app, orientación, fondo claro e iconos. |
 | `package.json` | Dependencias (solo cinco) y scripts de arranque. |
-| `screenshots/` | Las siete capturas de la interfaz (`01-lista.png` a `07-busqueda.png`) que se muestran en este README. |
+| `screenshots/` | Las ocho capturas de la interfaz (`01-lista.png` a `08-resultados-busqueda.png`) que se muestran en este README. |
 
 ### `src/screens/`
 
 | Archivo | Responsabilidad |
 |---|---|
 | `HomeScreen.js` | Única pantalla: guarda con estado qué Pokémon está abierto (`null` es la lista) y alterna entre lista y ficha sin librería de navegación; mantiene la lista montada para no perder su posición. |
-| `PokemonListView.js` | Vista de la lista: cuadrícula `FlatList` de dos columnas con scroll infinito, encabezado, campo de búsqueda fijo, y los estados de carga, error, pie de página y sin resultados. |
+| `PokemonListView.js` | Vista de la lista: cuadrícula `FlatList` de dos columnas con scroll infinito, encabezado, campo de búsqueda fijo, y los estados de carga, error, pie de página y sin resultados. Cuando una búsqueda da varias coincidencias, muestra su lista de resultados sobre la lista principal, que sigue montada. |
 | `PokemonDetailView.js` | Vista de la ficha: barra con "volver", campo de color con la imagen y su revelado, debajo una etiqueta de tinta a sangre con el número y el nombre, y luego tipos, medidas y estadísticas; maneja el botón Atrás de Android con `BackHandler`. |
 
 ### `src/components/`
@@ -152,11 +155,12 @@ Capturas en el navegador a 360×780, con datos de la PokéAPI simulados.
 |---|---|
 | `PokemonCard.js` | Pieza de la cuadrícula: cuadro con la imagen y, pegada debajo, la etiqueta con número y nombre; toda la pieza es el área táctil. |
 | `SearchBar.js` | Campo de texto controlado y botón "Buscar"; cierra el teclado al enviar y avisa al padre. |
+| `SearchResultsHeader.js` | Línea de resultados («10 resultados para «char»») y acción "Ver todos". |
 | `Header.js` | Título de la app y subtítulo con el total del catálogo. |
 | `StatBar.js` | Una fila de estadística: nombre, valor numérico y barra proporcional a 255 que crece animada. |
 | `TypeBadge.js` | Rectángulo con el nombre del tipo en español y su color. |
 | `LoadingState.js` | Bloque de carga: indicador junto a un texto visible. |
-| `ErrorState.js` | Bloque de error: frase en español y botón "Reintentar". |
+| `ErrorState.js` | Bloque de error: frase en español y botón "Reintentar", que es opcional. |
 | `EmptyState.js` | Bloque de "sin resultados" con la frase que nombra lo buscado. |
 | `ListFooter.js` | Pie de la lista: muestra la carga o el error de la página siguiente. |
 
@@ -166,22 +170,22 @@ Capturas en el navegador a 360×780, con datos de la PokéAPI simulados.
 |---|---|
 | `usePokemonList.js` | Estado de la lista paginada: primera página, páginas siguientes, reintento, sin duplicados y parada cuando no hay más. |
 | `usePokemonDetail.js` | Carga un Pokémon por id y expone su estado (`loading`, `success`, `error`) y su reintento. |
-| `usePokemonSearch.js` | Búsqueda por nombre o número: normaliza el término, cancela la búsqueda anterior y traduce el resultado a `idle`, `loading`, `empty` o `error`. |
+| `usePokemonSearch.js` | Búsqueda exacta o parcial: normaliza el término, cancela la búsqueda anterior, guarda el índice de nombres en memoria durante la sesión y traduce el resultado a un estado (`idle`, `loading`, `empty`, `error`) o a una lista de resultados. |
 | `useReduceMotion.js` | Informa si el sistema tiene activado "Reducir movimiento" y se actualiza si cambia. |
 
 ### `src/services/`
 
 | Archivo | Responsabilidad |
 |---|---|
-| `pokemonService.js` | Único módulo que llama a la red: `fetch` con `response.ok`, página de la lista y detalle por id o nombre, y conversión del JSON de la API a modelos limpios. |
+| `pokemonService.js` | Único módulo que llama a la red: `fetch` con `response.ok`, página de la lista, detalle por id o nombre, índice de nombres, y conversión del JSON de la API a modelos limpios. |
 | `apiErrors.js` | Errores tipados (`NotFoundError`, `HttpError`) y la comprobación de cancelación (`isAbortError`). |
 
 ### `src/config/`
 
 | Archivo | Responsabilidad |
 |---|---|
-| `api.js` | URL base de la API, tamaño de página (20), máximo de una estadística (255) y construcción de la URL de la imagen. |
-| `strings.js` | Todos los textos de la interfaz, en español. |
+| `api.js` | URL base de la API, tamaño de página (20), máximo de una estadística (255), tamaño del índice de nombres, máximo de resultados (100) y construcción de la URL de la imagen. |
+| `strings.js` | Todos los textos de la interfaz, en español, incluidos los de los resultados de búsqueda. |
 | `labels.js` | Nombres en español de los 18 tipos y de las 6 estadísticas. |
 
 ### `src/theme/`
@@ -200,6 +204,7 @@ Capturas en el navegador a 360×780, con datos de la PokéAPI simulados.
 | Archivo | Responsabilidad |
 |---|---|
 | `formatters.js` | Funciones puras de formato y conversión: número `#025`, mayúscula inicial, id desde una URL, normalización del término buscado, unidades y formato numérico es-CO. |
+| `searchMatch.js` | Decide si el término es exacto o parcial, y ordena las coincidencias (nombre exacto, empieza por el término, lo contiene). |
 | `nameFit.js` | Elige el tamaño de letra del nombre en la ficha para que un nombre largo nunca pase de dos líneas. |
 
 ## Arquitectura
@@ -257,7 +262,7 @@ Cada concepto visto en clase está marcado en el código con un comentario `// [
 | `AbortController` | `src/services/pokemonService.js`, `src/hooks/usePokemonList.js`, `src/hooks/usePokemonDetail.js`, `src/hooks/usePokemonSearch.js` |
 | `encodeURIComponent` | `src/services/pokemonService.js` |
 | `padStart` | `src/utils/formatters.js` |
-| `props` | `src/components/LoadingState.js`, `src/components/ListFooter.js`, `src/components/StatBar.js`, `src/components/TypeBadge.js` |
+| `props` | `src/components/LoadingState.js`, `src/components/ListFooter.js`, `src/components/StatBar.js`, `src/components/TypeBadge.js`, `src/components/SearchResultsHeader.js` |
 | `React.memo` | `src/components/PokemonCard.js` |
 | `useCallback` | `src/screens/HomeScreen.js` |
 | `useRef` | `src/screens/PokemonListView.js`, `src/screens/PokemonDetailView.js`, `src/components/StatBar.js`, `src/hooks/usePokemonSearch.js` |
