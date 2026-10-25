@@ -13,9 +13,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web",
-    "check": "node scripts/check-constitution.js",
-    "audit:visual": "node scripts/visual-audit.mjs"
+    "web": "expo start --web"
   },
   "private": true
 }
