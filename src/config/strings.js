@@ -25,7 +25,7 @@ export const STRINGS = {
 
   // Error and empty states: never technical details
   errorGeneric: 'No pudimos conectar con la PokéAPI. Revisa tu conexión e inténtalo de nuevo.',
-  searchNotFound: (query) => `No encontramos ningún Pokémon llamado "${query}".`,
+  searchNotFound: (query) => `No encontramos ningún Pokémon llamado “${query}”.`,
 
   // Accessibility labels
   cardLabel: (name, id) => `${name}, número ${id}`, // list tile

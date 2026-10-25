@@ -59,3 +59,10 @@ export function formatNumber(value) {
 export function formatMeasure(value, unit) {
   return `${formatNumber(value)} ${unit}`;
 }
+
+// Turns the spaces inside an already normalized search term into hyphens, the
+// way the API writes multi-word names: 'mr mime' -> 'mr-mime', 'mime  jr' -> 'mime-jr'.
+// It does not trim or lowercase; call normalizeQuery first.
+export function hyphenateSpaces(term) {
+  return term.replace(/\s+/g, '-');
+}

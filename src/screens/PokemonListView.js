@@ -1,12 +1,15 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { FlatList, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { STRINGS } from '../config/strings.js';
+import EmptyState from '../components/EmptyState.js';
 import ErrorState from '../components/ErrorState.js';
 import Header from '../components/Header.js';
 import ListFooter from '../components/ListFooter.js';
 import LoadingState from '../components/LoadingState.js';
 import PokemonCard from '../components/PokemonCard.js';
+import SearchBar from '../components/SearchBar.js';
 import { usePokemonList } from '../hooks/usePokemonList.js';
+import { usePokemonSearch } from '../hooks/usePokemonSearch.js';
 import { SPACING, pairFor } from '../theme/index.js';
 
 // Paginated Pokédex list: the first-page state (under the title) or the two-column
@@ -14,6 +17,27 @@ import { SPACING, pairFor } from '../theme/index.js';
 // `onSelectPokemon` is called with the id of the pressed piece.
 export default function PokemonListView({ onSelectPokemon }) {
   const { status, retry, items, total, footerStatus, loadMore } = usePokemonList();
+
+  // [CONCEPT] useState: the text of the search field lives here, and it is kept when a piece is
+  // pressed or a search ends.
+  const [text, setText] = useState('');
+  // A found Pokémon opens its detail through the same callback as a pressed piece.
+  const {
+    status: searchStatus,
+    retry: retrySearch,
+    lastQuery,
+    search,
+    reset: resetSearch,
+  } = usePokemonSearch({ onFound: onSelectPokemon });
+
+  // Pressing a piece always cancels any search first, then opens the detail.
+  const handleSelectPiece = useCallback(
+    (id) => {
+      resetSearch();
+      onSelectPokemon(id);
+    },
+    [resetSearch, onSelectPokemon],
+  );
 
   // [CONCEPT] useWindowDimensions: the width is read from the screen so the two tiles fill the row
   // on any phone, and it updates by itself when the window changes size.
@@ -32,11 +56,11 @@ export default function PokemonListView({ onSelectPokemon }) {
         imageUrl={item.imageUrl}
         pair={pairFor(index)}
         tileSize={tileSize}
-        onPress={onSelectPokemon}
+        onPress={handleSelectPiece}
         style={index % 2 === 1 ? styles.staggered : undefined}
       />
     ),
-    [tileSize, onSelectPokemon],
+    [tileSize, handleSelectPiece],
   );
 
   // [CONCEPT] useRef: the ref holds the FlatList instance so its imperative scrollToEnd method
@@ -103,10 +127,34 @@ export default function PokemonListView({ onSelectPokemon }) {
       );
   }
 
-  // The search field will sit fixed ABOVE the list, outside the header, so it stays visible
-  // while the header scrolls away.
+  // Fixed zone above the list and outside the header, so the field stays visible while the
+  // header scrolls away. The strip below the field shows the search state.
+  let strip = null;
+  switch (searchStatus) {
+    case 'loading':
+      strip = <LoadingState compact message={STRINGS.loadingSearch} />;
+      break;
+    case 'empty':
+      strip = (
+        <EmptyState compact testID="search-empty" message={STRINGS.searchNotFound(lastQuery)} />
+      );
+      break;
+    case 'error':
+      // The first-page error already shows the one retry button; avoid a duplicate.
+      if (status !== 'error') {
+        strip = <ErrorState compact message={STRINGS.errorGeneric} onRetry={retrySearch} />;
+      }
+      break;
+    default:
+      strip = null;
+  }
+
   return (
     <View style={styles.container}>
+      <View style={styles.searchZone}>
+        <SearchBar value={text} onChangeText={setText} onSearch={search} />
+        {strip ? <View style={styles.strip}>{strip}</View> : null}
+      </View>
       {content}
     </View>
   );
@@ -119,6 +167,14 @@ function RowSeparator() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  // Fixed search zone: page margin on the sides, space before the title or the grid.
+  searchZone: {
+    marginHorizontal: SPACING.page,
+    paddingBottom: SPACING.lg,
+  },
+  strip: {
+    marginTop: SPACING.sm,
   },
   // Inside the list the side margin comes from the content container; the bottom padding is
   // the space between the subtitle and the grid.

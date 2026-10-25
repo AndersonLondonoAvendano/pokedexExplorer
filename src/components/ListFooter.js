@@ -25,6 +25,7 @@ export default function ListFooter({ footerStatus, onRetry }) {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: SPACING.stagger,
+    // The right column is pushed down by the stagger, so the footer clears it plus one gap.
+    marginTop: SPACING.stagger + SPACING.md,
   },
 });
