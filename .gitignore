@@ -40,7 +40,7 @@ yarn-error.*
 /ios
 /android
 
-# Herramientas de trabajo, no se entregan (D-35)
+# Archivos de trabajo locales (no se entregan)
 /.claude/
 /docs/
 /specs/
@@ -50,3 +50,5 @@ yarn-error.*
 /DESIGN.md
 /PRODUCT.md
 /.cgcignore
+/mcp.json
+/.mcp.json

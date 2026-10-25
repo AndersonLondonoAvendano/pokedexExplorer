@@ -11,10 +11,11 @@ App móvil hecha con **React Native + Expo (SDK 57)** que consume la [PokéAPI](
 
 ## Cómo ejecutar
 
-**Requisitos**
+**Requisitos previos**
 
-- Node.js 20 o superior (con npm).
-- La app **Expo Go** instalada en el celular (Android o iOS), en una versión compatible con el SDK 57. El celular y el computador deben estar en la misma red.
+- Node.js LTS (20 o superior, con npm).
+- La app **Expo Go** instalada en el teléfono (Android o iOS), en una versión compatible con el SDK 57.
+- El teléfono y el computador en la misma red Wi-Fi. Si la red no deja conectar, usa `npx expo start --tunnel`.
 
 **Pasos**
 
@@ -32,10 +33,32 @@ No hace falta ninguna clave: la PokéAPI es pública. La app necesita conexión 
 
 - **Lista paginada de 20 en 20** en una cuadrícula de dos columnas, con **scroll infinito**: al acercarse al final se pide la siguiente página, sin repetir peticiones ni duplicar Pokémon.
 - **Ficha de cada Pokémon**: imagen oficial, número de catálogo (`#025`), tipos, altura, peso y las seis estadísticas base con su barra.
-- **Búsqueda por nombre o por número**: acepta mayúsculas, espacios y ceros a la izquierda (`Pikachu`, `  025 `); se lanza con el botón o con la tecla de enviar del teclado y abre la ficha si existe.
+- **Búsqueda por nombre o por número**: acepta el nombre en inglés (como lo entrega la PokéAPI) o el número; los espacios y las mayúsculas se normalizan (`Pikachu`, `  025 `). Se lanza con el botón o con la tecla de enviar del teclado y abre la ficha si existe.
 - **Estados de carga, error y sin resultados** en todas las pantallas: cada petición muestra un texto en español, nunca un código técnico, y los errores ofrecen un botón para reintentar. Si falla una página intermedia de la lista, los Pokémon ya cargados se conservan.
 - **Botón Atrás de Android**: desde la ficha vuelve a la lista (no cierra la app) y la lista conserva su posición.
 - **Accesibilidad**: etiquetas y roles en lo interactivo, texto que crece con el tamaño de fuente del sistema y respeto del ajuste "Reducir movimiento".
+
+## Tecnologías
+
+- Expo SDK 57 y React Native, con JavaScript.
+- `react-native-safe-area-context` para las áreas seguras.
+- La PokéAPI como fuente de datos.
+- Sin axios ni librerías de navegación.
+
+## Capturas de la interfaz (360×780)
+
+Capturas en el navegador a 360×780, con datos de la PokéAPI simulados.
+
+| | |
+|---|---|
+| ![Lista inicial](screenshots/01-lista.png) | ![Carga de más Pokémon](screenshots/02-cargando-mas.png) |
+| Lista inicial | Carga de más Pokémon |
+| ![Ficha de Charizard](screenshots/03-ficha.png) | ![Cargando la lista](screenshots/04-cargando.png) |
+| Ficha de Charizard | Cargando la lista |
+| ![Error con Reintentar](screenshots/05-error.png) | ![Búsqueda sin resultados](screenshots/06-sin-resultados.png) |
+| Error con Reintentar | Búsqueda sin resultados |
+| ![Ficha tras buscar Pikachu](screenshots/07-busqueda.png) | |
+| Ficha tras buscar "Pikachu" | |
 
 ## Árbol de carpetas
 
@@ -56,6 +79,14 @@ No hace falta ninguna clave: la PokéAPI es pública. La app necesita conexión 
 │   ├── favicon.png
 │   ├── icon.png
 │   └── splash-icon.png
+├── screenshots/
+│   ├── 01-lista.png
+│   ├── 02-cargando-mas.png
+│   ├── 03-ficha.png
+│   ├── 04-cargando.png
+│   ├── 05-error.png
+│   ├── 06-sin-resultados.png
+│   └── 07-busqueda.png
 └── src/
     ├── components/
     │   ├── EmptyState.js
@@ -105,6 +136,7 @@ No hace falta ninguna clave: la PokéAPI es pública. La app necesita conexión 
 | `App.js` | Raíz de la app: provee las áreas seguras (`SafeAreaProvider`, `SafeAreaView`), pinta el fondo piedra y la barra de estado, y muestra `HomeScreen`. No tiene lógica. |
 | `app.json` | Configuración de Expo: nombre de la app, orientación, fondo claro e iconos. |
 | `package.json` | Dependencias (solo cinco) y scripts de arranque. |
+| `screenshots/` | Las siete capturas de la interfaz (`01-lista.png` a `07-busqueda.png`) que se muestran en este README. |
 
 ### `src/screens/`
 
@@ -310,10 +342,13 @@ Solo se mueve la ficha, y de dos maneras:
 
 Las animaciones usan solo `Animated` con el *native driver* (cambian transformaciones, nunca el diseño). Si el sistema tiene activado **Reducir movimiento**, la ficha aparece directamente en su estado final, sin cortina ni crecimiento. La lista, las piezas y los estados no tienen animaciones decorativas: al presionar una pieza el cambio de tono es inmediato.
 
-### Por qué no parece una plantilla
+## Metodología y uso de IA
 
-- No hay la típica lista de tarjetas blancas con sombra y esquinas redondeadas: hay piezas de color plano con etiqueta, escalonadas.
-- La jerarquía la construyen el tamaño y el peso de la letra, no la decoración; no hay emoji, ni mayúsculas forzadas, ni iconos de relleno.
-- La paleta es una sola familia cálida de piedra y tinta con un acento salvia, y el color vivo queda reservado para lo que es información: el tipo y la imagen.
-- El revelado de la ficha, como un obturador que se levanta, es el único gesto de movimiento, y por eso se nota.
-- El lenguaje de guía de campo (números de catálogo, etiquetas de espécimen, "Guía de campo de N Pokémon") es consistente en el texto, la composición y el color.
+Este proyecto se desarrolló con apoyo de inteligencia artificial (Claude, de Anthropic, mediante Claude Code) siguiendo una metodología de desarrollo guiado por especificaciones (Spec-Driven Development): primero se definieron los requisitos del taller, luego se planificó, y después se implementó y verificó por partes. El equipo revisó y probó el resultado en Expo Go.
+
+## Créditos y aviso
+
+- Los datos e imágenes provienen de la [PokéAPI](https://pokeapi.co) (pokeapi.co).
+- Pokémon y sus nombres son marcas de Nintendo, Game Freak y The Pokémon Company.
+- Uso exclusivamente educativo.
+
