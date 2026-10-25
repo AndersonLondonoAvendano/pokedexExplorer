@@ -39,3 +39,14 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Herramientas de trabajo, no se entregan (D-35)
+/.claude/
+/docs/
+/specs/
+/scripts/
+/AGENTS.md
+/CLAUDE.md
+/DESIGN.md
+/PRODUCT.md
+/.cgcignore
